@@ -1,0 +1,9 @@
+#!/bin/bash
+runCmd() {
+  typeset cmd="$*"
+  eval $cmd
+}
+runCmd "systemctl stop bb-io-server" >/dev/null
+runCmd "systemctl stop bb-core" >/dev/null
+runCmd "echo 44 > /sys/class/gpio/unexport" >/dev/null 2>&1
+sleep 2

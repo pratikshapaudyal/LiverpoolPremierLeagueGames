@@ -1,0 +1,55 @@
+#!/bin/bash
+GREEN='\033[0;32m'
+RED='\033[31m'
+NC='\033[0m' 
+
+FW_DIRECTORY="/usr/share/brainboxes/bb-arduino"
+LOG_FILE="/var/log/brainboxes/bb-arduino-info.log"
+BBCLI_FILE="/usr/share/brainboxes/bb-cli/bb.py"
+
+# These variables are temporary before we move to GitVersion
+IOVERSION="1.0.13"
+FW_FILE="bb400r3_iofw_1.0.13.hex"
+
+### Runs bb update if it exists
+runUpdate() {
+  systemctl start bb-core >/dev/null; sleep 2
+  systemctl start bb-io-server >/dev/null; sleep 2
+  if [ -f $BBCLI_FILE ]; then
+    bb update & pid=$!
+    spin='-\|/'
+    i=0
+    while kill -0 $pid 2>/dev/null
+    do
+      i=$(( (i+1) %4 ))
+      printf "\rPlease wait... ${spin:$i:1}"
+      sleep .1
+    done
+    echo #
+  fi
+}
+
+### Runs commands passed to it and checks the return code
+safeRunCommand() {
+  typeset cmd="$*"
+  typeset ret_code
+  eval $cmd
+  ret_code=$?
+  if [ $ret_code != 0 ]; then
+    runUpdate
+    printf "${RED}Error: [%d] Programming Arduino Failed${NC}" $ret_code
+    echo ""
+    echo "Please refer to /var/log/brainboxes/bb-arduino-info.log for more details"
+    echo "Or send it to support@brainboxes.com for additional support"
+    exit $ret_code
+  fi
+}
+
+echo -e "\e[7mProgramming DIO Arduino...\e[27m"
+command="python3 $FW_DIRECTORY/prog_dio.py /dev/serial/by-id/usb-Arduino_LLC_Arduino_Micro-if00 $FW_DIRECTORY/$FW_FILE $FW_DIRECTORY/caterina_2341_0037_noblink.hex"
+safeRunCommand "$command" > $LOG_FILE
+runUpdate
+
+# If everything is a success, this will replace the version inside your default bb_config
+sed -i "s@.*io_firmware: .*@    io_firmware: $IOVERSION@" /boot/.bb_config.yaml.default
+echo -e "${GREEN}Finished programming Arduino${NC}"

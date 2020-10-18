@@ -1,0 +1,12 @@
+Source: bb-arduino
+Section: custom
+Priority: optional
+Maintainer: Brainboxes <support@brainboxes.com>
+Version: ##VERSION##
+Build-Depends: debconf (>= 0.2.26)
+Homepage: https://www.brainboxes.com/
+Package: bb-arduino
+Architecture: armhf
+Depends: python3-serial
+Description: Brainboxes - Arduino
+	The BB-Arduino package upgrades the firmware on a BB-400 Arduino
